@@ -42,5 +42,8 @@ public class ProductModel {
     @Column(name = "status")
     private Boolean status;
 
+    @Column(name = "time_period")
+    private Integer timePeriod;
+
 }
 

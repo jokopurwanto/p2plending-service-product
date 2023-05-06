@@ -1,6 +1,8 @@
 package com.p2plending.product.service.imple;
 
 import com.p2plending.product.dto.ProductCreateDto;
+import com.p2plending.product.dto.ProductUpdateDto;
+import com.p2plending.product.handler.ProductNotFoundException;
 import com.p2plending.product.model.ProductModel;
 import com.p2plending.product.repository.ProductRepository;
 import com.p2plending.product.service.IProductService;
@@ -8,6 +10,10 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +26,13 @@ public class ProductService implements IProductService {
 
     @Override
     public ProductModel createProduct(ProductCreateDto productCreateDto) {
+
+        //total time period
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate startDate = LocalDate.parse(productCreateDto.getLoanDate().toString(), formatter).withDayOfMonth(1);
+        LocalDate endDate = LocalDate.parse(productCreateDto.getLoanDueDate().toString(), formatter).withDayOfMonth(1);
+        long months = ChronoUnit.MONTHS.between(startDate, endDate);
+
         //save data db
         ProductModel productModel = ProductModel.builder()
                 .idBorrower(productCreateDto.getIdBorrower())
@@ -30,23 +43,54 @@ public class ProductService implements IProductService {
                 .loanDate(productCreateDto.getLoanDate())
                 .loanDueDate(productCreateDto.getLoanDueDate())
                 .status(false)
+                .timePeriod((int) months)
                 .build();
         return productRepository.save(productModel);
     }
 
     @Override
-    public Map<String, Object> updateProduct(ProductCreateDto productCreateDto) {
-        return null;
+    public ProductModel updateProduct(ProductUpdateDto productUpdateDto, Integer id) {
+        //total time period
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate startDate = LocalDate.parse(productUpdateDto.getLoanDate().toString(), formatter).withDayOfMonth(1);
+        LocalDate endDate = LocalDate.parse(productUpdateDto.getLoanDueDate().toString(), formatter).withDayOfMonth(1);
+        long months = ChronoUnit.MONTHS.between(startDate, endDate);
+
+        ProductModel productModel = ProductModel.builder()
+                .id(id)
+                .idBorrower(productUpdateDto.getIdBorrower())
+                .productTitle(productUpdateDto.getProductTitle())
+                .interest(productUpdateDto.getInterest())
+                .loanAmount(productUpdateDto.getLoanAmount())
+                .remainingReqAmount(productUpdateDto.getRemainingReqAmount())
+                .loanDate(productUpdateDto.getLoanDate())
+                .loanDueDate(productUpdateDto.getLoanDueDate())
+                .status(false)
+                .timePeriod((int) months)
+                .build();
+        return productRepository.save(productModel);
     }
 
     @Override
     public Map<String, Object> deleteProduct(Integer id) {
-        return null;
+        if(productRepository.findById(id).isEmpty())
+            throw new ProductNotFoundException("Data yang dicari tidak ditemukan");
+
+        ProductModel productModel = productRepository.findById(id).get();
+        Map<String,Object> response = new HashMap<>();
+        response.put("id", productModel.getId());
+        response.put("product", productModel.getProductTitle());
+        response.put("interest", productModel.getInterest());
+        response.put("loanAmount",productModel.getLoanAmount());
+        productRepository.deleteById(id);
+        return response;
     }
 
     @Override
     public ProductModel getProduct(Integer id) {
-        return null;
+        if(productRepository.findById(id).isEmpty())
+            throw new ProductNotFoundException("Data yang dicari tidak ditemukan");
+        return productRepository.findById(id).get();
     }
 
     @Override
